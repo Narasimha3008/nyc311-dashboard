@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NYC 311 Executive Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,sans-serif}
+:root{
+  --bg:#0F1C2E;--surface:#162035;--surface2:#1E2D45;--surface3:#243552;
+  --text:#E2E8F0;--muted:#7090B0;--border:#243552;
+  --blue:#378ADD;--blue-d:#185FA5;
+  --red:#E24B4A;--amber:#EF9F27;--green:#639922;
+}
+html,body{height:100%;background:var(--bg);color:var(--text)}
+.shell{display:flex;height:100vh}
+.sidebar{width:200px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column}
+.sidebar-header{padding:16px 14px 12px;border-bottom:1px solid var(--border)}
+.sidebar-logo{font-size:14px;font-weight:500;color:var(--text)}
+.sidebar-sub{font-size:10px;color:var(--muted);margin-top:2px}
+.nav-section{padding:12px 10px 4px;font-size:9px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.nav-btn{display:flex;align-items:center;gap:9px;padding:9px 14px;cursor:pointer;font-size:12px;color:var(--muted);border-left:2px solid transparent;transition:all .12s}
+.nav-btn:hover{background:var(--surface2);color:var(--text)}
+.nav-btn.active{color:var(--blue);border-left-color:var(--blue);background:#0C2040}
+.nav-btn i{font-size:16px;flex-shrink:0}
+.nav-spacer{flex:1}
+.sidebar-footer{padding:10px 14px;border-top:1px solid var(--border);font-size:9px;color:var(--muted);line-height:1.6}
+.sidebar-footer a{color:var(--blue);text-decoration:none}
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.filter-label{font-size:9px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+.fpill{padding:3px 9px;border-radius:20px;font-size:11px;border:0.5px solid var(--border);color:var(--muted);cursor:pointer;transition:all .12s;background:transparent;user-select:none}
+.fpill.on{background:#0C2040;color:var(--blue);border-color:var(--blue-d)}
+.fpill.status-open.on{background:#2A1A00;color:#EF9F27;border-color:#854F0B}
+.fpill.status-closed.on{background:#071509;color:#639922;border-color:#27500A}
+.sep{width:1px;height:16px;background:var(--border);flex-shrink:0}
+.reset-btn{margin-left:auto;padding:4px 11px;font-size:11px;border-radius:20px;border:0.5px solid var(--red);background:transparent;cursor:pointer;color:var(--red);transition:all .12s}
+.reset-btn:hover{background:#3B1111}
+.content{flex:1;overflow-y:auto;padding:12px;scrollbar-width:thin;scrollbar-color:var(--surface3) transparent}
+.page{display:none}.page.active{display:block}
+.kpi-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:11px 13px}
+.kpi-lbl{font-size:9px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.kpi-val{font-size:22px;font-weight:500;line-height:1;margin-bottom:4px}
+.kpi-delta{font-size:10px}
+.kpi-delta.up{color:#639922}.kpi-delta.dn{color:#E24B4A}.kpi-delta.warn{color:#EF9F27}
+.insight{padding:8px 11px;border-radius:6px;font-size:11px;line-height:1.5;margin-bottom:8px;border-left:3px solid}
+.insight.danger{background:#200808;border-color:var(--red);color:#FFAAAA}
+.insight.warn{background:#1A1000;border-color:var(--amber);color:#FFD080}
+.insight.info{background:#06152A;border-color:var(--blue);color:#99CCFF}
+.insight.ok{background:#071509;border-color:var(--green);color:#AADDAA}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px}
+.card-title{font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.row3{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr);gap:8px;margin-bottom:8px}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:8px}
+.bar-row{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.bar-lbl{font-size:10px;color:var(--muted);flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{flex:1;background:var(--surface2);border-radius:3px;overflow:hidden}
+.bar-fill{height:16px;border-radius:3px;display:flex;align-items:center;padding-left:5px;font-size:9px;color:#fff;font-weight:500;transition:width .35s ease}
+.bar-val{font-size:10px;color:var(--muted);width:38px;text-align:right;flex-shrink:0}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);margin-bottom:5px}
+.leg-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{text-align:left;font-size:9px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:5px 7px;border-bottom:1px solid var(--border)}
+td{padding:5px 7px;border-bottom:1px solid var(--border);color:var(--muted)}
+td.bad{color:var(--red);font-weight:500}td.warn{color:var(--amber)}td.ok{color:var(--green)}
+tr:hover td{background:var(--surface2)}
+.scatter{position:relative;height:190px;border-left:1px solid var(--border);border-bottom:1px solid var(--border);margin:4px 4px 14px 22px}
+.sdot{position:absolute;border-radius:50%;transform:translate(-50%,50%);cursor:default;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:500;color:#fff;transition:all .4s ease}
+.sdot:hover .stt{display:block}
+.stt{display:none;position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);background:#000;color:#fff;font-size:9px;padding:4px 8px;border-radius:4px;white-space:nowrap;z-index:20;pointer-events:none}
+.ql{position:absolute;font-size:8px;color:var(--muted)}
+.axlabels-y{position:absolute;left:-20px;top:0;height:100%;display:flex;flex-direction:column;justify-content:space-between;font-size:8px;color:var(--muted)}
+.axlabels-x{display:flex;justify-content:space-between;font-size:8px;color:var(--muted);margin-left:22px;margin-bottom:6px}
+.sla-row-wrap{margin-bottom:6px}
+.sla-lbl-row{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:2px}
+.sla-bar{display:flex;height:15px;border-radius:3px;overflow:hidden}
+.cohort-row{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.cohort-lbl{font-size:9px;color:var(--muted);width:52px;flex-shrink:0}
+.cohort-bar{display:flex;flex:1;height:15px;border-radius:3px;overflow:hidden}
+.borough-mini-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-bottom:8px}
+.bcard{background:var(--surface2);border-radius:6px;padding:9px 10px;border:1px solid var(--border)}
+.ch-seg-wrap{display:flex;height:16px;border-radius:3px;overflow:hidden;flex:1}
+.ch-seg{display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:500;color:#fff;transition:width .35s}
+.hm-table{border-collapse:separate;border-spacing:2px;font-size:9px}
+.hm-table th{font-size:8px;color:var(--muted);padding:0 2px;border:none;text-align:center;background:transparent}
+.hm-table td{border-radius:2px;text-align:center;padding:1px 0;min-width:22px;height:18px;cursor:default}
+.context-bar{font-size:10px;color:var(--muted);margin-bottom:8px;padding:6px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="sidebar" role="navigation" aria-label="Dashboard pages">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">NYC 311 Dashboard</div>
+    <div class="sidebar-sub">Executive Intelligence Suite</div>
+  </div>
+  <div class="nav-section">Analytics</div>
+  <div class="nav-btn active" onclick="goPage(0,this)"><i class="ti ti-layout-dashboard"></i> Executive summary</div>
+  <div class="nav-btn" onclick="goPage(1,this)"><i class="ti ti-building-skyscraper"></i> Agency performance</div>
+  <div class="nav-btn" onclick="goPage(2,this)"><i class="ti ti-map-pin"></i> Geographic dive</div>
+  <div class="nav-btn" onclick="goPage(3,this)"><i class="ti ti-clock-check"></i> SLA intelligence</div>
+  <div class="nav-spacer"></div>
+  <div class="sidebar-footer">
+    Data: 2020–2026 · Updated daily<br>
+    Source: <a href="https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9" target="_blank">NYC Open Data</a><br>
+    Built by Nara Naidu · Stripe
+  </div>
+</nav>
+
+<div class="main">
+<div class="topbar" role="search" aria-label="Global filters">
+  <span class="filter-label">Borough</span>
+  <span class="fpill on" data-filter="borough" data-val="ALL" onclick="toggleFilter(this)">All</span>
+  <span class="fpill" data-filter="borough" data-val="Bronx" onclick="toggleFilter(this)">Bronx</span>
+  <span class="fpill" data-filter="borough" data-val="Brooklyn" onclick="toggleFilter(this)">Brooklyn</span>
+  <span class="fpill" data-filter="borough" data-val="Manhattan" onclick="toggleFilter(this)">Manhattan</span>
+  <span class="fpill" data-filter="borough" data-val="Queens" onclick="toggleFilter(this)">Queens</span>
+  <span class="fpill" data-filter="borough" data-val="Staten Isl." onclick="toggleFilter(this)">SI</span>
+  <div class="sep"></div>
+  <span class="filter-label">Status</span>
+  <span class="fpill status-open on" data-filter="status" data-val="Open" onclick="toggleFilter(this)">Open</span>
+  <span class="fpill status-closed on" data-filter="status" data-val="Closed" onclick="toggleFilter(this)">Closed</span>
+  <span class="fpill on" data-filter="status" data-val="Pending" onclick="toggleFilter(this)">Pending</span>
+  <div class="sep"></div>
+  <span class="filter-label">Year</span>
+  <span class="fpill on" data-filter="year" data-val="2020" onclick="toggleFilter(this)">2020</span>
+  <span class="fpill on" data-filter="year" data-val="2021" onclick="toggleFilter(this)">2021</span>
+  <span class="fpill on" data-filter="year" data-val="2022" onclick="toggleFilter(this)">2022</span>
+  <span class="fpill on" data-filter="year" data-val="2023" onclick="toggleFilter(this)">2023</span>
+  <span class="fpill on" data-filter="year" data-val="2024" onclick="toggleFilter(this)">2024</span>
+  <span class="fpill on" data-filter="year" data-val="2025" onclick="toggleFilter(this)">2025</span>
+  <span class="fpill on" data-filter="year" data-val="2026" onclick="toggleFilter(this)">2026</span>
+  <button class="reset-btn" onclick="resetAll()"><i class="ti ti-refresh"></i> Reset</button>
+</div>
+
+<div class="content">
+
+<!-- PAGE 0: EXECUTIVE SUMMARY -->
+<div class="page active" id="pg0">
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-lbl">Total requests</div><div class="kpi-val" id="k_total">31.4M</div><div class="kpi-delta up">+8.2% MoM</div></div>
+    <div class="kpi"><div class="kpi-lbl">Open / unresolved</div><div class="kpi-val" id="k_open" style="color:#E24B4A">2.1M</div><div class="kpi-delta dn">+3.4% MoM</div></div>
+    <div class="kpi"><div class="kpi-lbl">Avg resolution (days)</div><div class="kpi-val" id="k_res">8.3d</div><div class="kpi-delta up">−1.1d MoM</div></div>
+    <div class="kpi"><div class="kpi-lbl">SLA breach rate</div><div class="kpi-val" id="k_sla" style="color:#EF9F27">19.7%</div><div class="kpi-delta warn">+0.3% MoM</div></div>
+    <div class="kpi"><div class="kpi-lbl">Top complaint</div><div class="kpi-val" id="k_top" style="font-size:13px;line-height:1.3">Noise – Residential</div><div class="kpi-delta" style="color:var(--muted)" id="k_top_d">5.2M total</div></div>
+  </div>
+  <div class="insight danger" id="ins0a"></div>
+  <div class="insight warn"   id="ins0b"></div>
+  <div class="row3">
+    <div class="card">
+      <div class="card-title"><i class="ti ti-chart-line"></i> Monthly request volume</div>
+      <div style="position:relative;height:145px"><canvas id="c_trend" role="img" aria-label="Monthly request volume trend">Monthly trend.</canvas></div>
+      <div style="display:flex;gap:14px;margin-top:6px;font-size:9px;color:var(--muted)">
+        <span><span style="width:9px;height:9px;background:#378ADD;border-radius:2px;display:inline-block;vertical-align:middle;margin-right:3px"></span>Volume</span>
+        <span><span style="width:12px;height:2px;background:#EF9F27;display:inline-block;vertical-align:middle;margin-right:3px"></span>3M avg</span>
+        <span><span style="width:9px;height:9px;background:rgba(226,75,74,.22);border-radius:2px;display:inline-block;vertical-align:middle;margin-right:3px"></span>COVID period</span>
+      </div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column">
+      <div class="card-title"><i class="ti ti-chart-donut"></i> Status breakdown</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px;flex:1">
+        <div style="position:relative;width:105px;height:105px;flex-shrink:0"><canvas id="c_donut" width="105" height="105" role="img" aria-label="Status donut">Status breakdown.</canvas></div>
+        <div id="donut_legend" style="width:100%;padding:0 4px"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="ti ti-map"></i> Volume by borough</div>
+      <div id="boro_bars"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><i class="ti ti-chart-bar"></i> Top 10 complaint types — bar color = resolution rate</div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px" id="top10"></div>
+    <div style="font-size:9px;color:var(--muted);margin-top:6px">Green = high resolution rate · Red = low resolution rate</div>
+  </div>
+</div>
+
+<!-- PAGE 1: AGENCY PERFORMANCE -->
+<div class="page" id="pg1">
+  <div class="insight danger" id="ins1a"></div>
+  <div class="insight ok"    id="ins1b"></div>
+  <div class="context-bar"  id="agency_context"></div>
+  <div class="row2">
+    <div class="card">
+      <div class="card-title"><i class="ti ti-chart-dots"></i> Agency scatter — volume vs. resolution (bubble = SLA breach)</div>
+      <div style="position:relative">
+        <div class="scatter" id="scatterEl" role="img" aria-label="Agency scatter plot">
+          <div class="axlabels-y"><span>Slow</span><span style="margin-top:auto">Fast</span></div>
+          <div style="position:absolute;top:50%;left:0;right:0;height:1px;background:var(--border)"></div>
+          <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--border)"></div>
+          <span class="ql" style="top:3px;left:3px;color:#E24B4A">⚠ High/slow</span>
+          <span class="ql" style="top:3px;right:4px">Low/slow</span>
+          <span class="ql" style="bottom:3px;left:3px;color:#639922">★ High/fast</span>
+          <span class="ql" style="bottom:3px;right:4px">Low/fast</span>
+        </div>
+        <div class="axlabels-x"><span>High volume</span><span>Low volume</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="ti ti-clock-x"></i> Open request age distribution</div>
+      <div id="age_dist"></div>
+      <div style="font-size:9px;color:var(--muted);margin-top:5px" id="age_note"></div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:8px">
+    <div class="card-title"><i class="ti ti-chart-bar"></i> SLA compliance by agency — sorted worst first</div>
+    <div id="sla_agency"></div>
+    <div style="display:flex;gap:12px;margin-top:6px;font-size:9px;color:var(--muted)">
+      <span><span style="background:#639922;width:9px;height:9px;display:inline-block;border-radius:1px;vertical-align:middle;margin-right:3px"></span>On-time</span>
+      <span><span style="background:#E24B4A;width:9px;height:9px;display:inline-block;border-radius:1px;vertical-align:middle;margin-right:3px"></span>SLA breach</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><i class="ti ti-table"></i> Agency detail — requests &amp; SLA by selected borough(s)</div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Agency</th><th>Requests</th><th>Avg res (days)</th><th>SLA breach %</th><th>Open backlog</th><th>Status</th></tr></thead><tbody id="ag_tbl"></tbody></table></div>
+  </div>
+</div>
+
+<!-- PAGE 2: GEOGRAPHIC -->
+<div class="page" id="pg2">
+  <div class="insight danger" id="ins2a"></div>
+  <div class="insight info"   id="ins2b"></div>
+  <div class="card" style="margin-bottom:8px">
+    <div class="card-title"><i class="ti ti-map-2"></i> Borough comparison</div>
+    <div class="borough-mini-grid" id="boro_cards"></div>
+  </div>
+  <div class="row2">
+    <div class="card">
+      <div class="card-title"><i class="ti ti-chart-bar"></i> Top complaints per borough</div>
+      <div id="small_mult"></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="ti ti-device-mobile"></i> Submission channel by borough</div>
+      <div id="channels"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:9px;margin-top:8px;font-size:9px;color:var(--muted)">
+        <span><span style="background:#185FA5;width:9px;height:9px;display:inline-block;border-radius:1px;vertical-align:middle;margin-right:3px"></span>Phone</span>
+        <span><span style="background:#0F6E56;width:9px;height:9px;display:inline-block;border-radius:1px;vertical-align:middle;margin-right:3px"></span>Online</span>
+        <span><span style="background:#854F0B;width:9px;height:9px;display:inline-block;border-radius:1px;vertical-align:middle;margin-right:3px"></span>App</span>
+        <span><span style="background:#5F5E5A;width:9px;height:9px;display:inline-block;border-radius:1px;vertical-align:middle;margin-right:3px"></span>Other</span>
+      </div>
+      <div style="font-size:9px;color:var(--muted);margin-top:5px">Bronx &amp; Staten Island most phone-dependent — digital equity gap</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><i class="ti ti-table"></i> Community board rankings — worst performers</div>
+    <div style="overflow-x:auto"><table><thead><tr><th>Board</th><th>Borough</th><th>Total</th><th>Open</th><th>Avg res</th><th>Top complaint</th></tr></thead><tbody id="cb_tbl"></tbody></table></div>
+  </div>
+</div>
+
+<!-- PAGE 3: SLA INTELLIGENCE -->
+<div class="page" id="pg3">
+  <div class="insight danger" id="ins3a"></div>
+  <div class="insight ok"    id="ins3b"></div>
+  <div class="row2">
+    <div class="card">
+      <div class="card-title"><i class="ti ti-chart-line"></i> Monthly SLA breach rate — 5% target</div>
+      <div style="position:relative;height:145px"><canvas id="c_sla" role="img" aria-label="SLA breach rate trend">SLA trend.</canvas></div>
+      <div style="display:flex;gap:14px;margin-top:6px;font-size:9px;color:var(--muted)">
+        <span><span style="width:9px;height:9px;background:#E24B4A;border-radius:2px;display:inline-block;vertical-align:middle;margin-right:3px"></span>Breach %</span>
+        <span><span style="width:12px;height:2px;background:#639922;display:inline-block;vertical-align:middle;margin-right:3px"></span>5% target</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="ti ti-layers-subtract"></i> Cohort closure by submission quarter</div>
+      <div id="cohort"></div>
+      <div style="display:flex;gap:10px;margin-top:6px;font-size:9px;color:var(--muted)">
+        <span><span style="background:#639922;width:9px;height:9px;display:inline-block;border-radius:1px;vertical-align:middle;margin-right:3px"></span>Closed</span>
+        <span><span style="background:#E24B4A;width:9px;height:9px;display:inline-block;border-radius:1px;vertical-align:middle;margin-right:3px"></span>Still open</span>
+        <span><span style="background:#5F5E5A;width:9px;height:9px;display:inline-block;border-radius:1px;vertical-align:middle;margin-right:3px"></span>Cancelled</span>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><i class="ti ti-layout-grid"></i> Resolution heatmap — complaint type × month (avg days to close)</div>
+    <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;font-size:9px;color:var(--muted)">
+      <span>Faster</span>
+      <div style="display:flex;gap:2px">
+        <div style="width:13px;height:10px;background:#C0DD97;border-radius:2px"></div>
+        <div style="width:13px;height:10px;background:#97C459;border-radius:2px"></div>
+        <div style="width:13px;height:10px;background:#639922;border-radius:2px"></div>
+        <div style="width:13px;height:10px;background:#EF9F27;border-radius:2px"></div>
+        <div style="width:13px;height:10px;background:#BA7517;border-radius:2px"></div>
+        <div style="width:13px;height:10px;background:#E24B4A;border-radius:2px"></div>
+        <div style="width:13px;height:10px;background:#A32D2D;border-radius:2px"></div>
+      </div>
+      <span>Slower (30+ days)</span>
+    </div>
+    <div id="heatmap" style="overflow-x:auto"></div>
+  </div>
+</div>
+
+</div>
+</div>
+</div>
+
+<script src="dashboard.js"></script>
+</body>
+</html>
