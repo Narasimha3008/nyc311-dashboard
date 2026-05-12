@@ -85,7 +85,7 @@ A full Power BI `.pbix` package (DAX measures, Power Query M scripts, data model
 
 ## Author
 
-**Nara Naidu** · Data Analyst
+**Narasimha Naidu** · Data Analyst
 [LinkedIn](https://linkedin.com/in/YOUR-PROFILE) · [GitHub](https://github.com/YOUR-USERNAME)
 
 ---
