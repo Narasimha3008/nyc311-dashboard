@@ -82,12 +82,9 @@ A full Power BI `.pbix` package (DAX measures, Power Query M scripts, data model
 - **Rows:** ~30M (2010–present)
 
 ---
-
 ## Author
 
-**Narasimha Naidu** · Data Analyst
-[LinkedIn](https://linkedin.com/in/YOUR-PROFILE) · [GitHub](https://github.com/YOUR-USERNAME)
-
----
-
+**Narasimha Naidu Kilari** · Senior Data Analyst  
+Power BI · Snowflake · SQL · Python · dbt · AWS  
+[LinkedIn](https://linkedin.com/in/narasimhanaidu-kilari) · [GitHub](https://github.com/Narasimha3008)
 *Built with NYC Open Data · Visualized with Chart.js*
